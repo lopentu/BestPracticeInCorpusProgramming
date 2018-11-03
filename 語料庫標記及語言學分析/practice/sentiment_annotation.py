@@ -1,5 +1,6 @@
 import csv
 import pandas as pd
+import re
 
 # --- 讀入要標記的檔案 --- #
 sample_file = list(csv.reader(open('new_sample.txt', "r"), delimiter = '\t'))
@@ -13,30 +14,51 @@ df = df.drop(['sample', 'polarity'], axis=1) #把參考用的column拿掉
 positive_words = open("positive_words.txt","r").read().split("\n")
 negative_words = open("negative_words.txt","r").read().split("\n")
 
-# --- 計算文本中的正向詞彙 --- #
-positive_score = []
+# === 計算positive word 在每一個sample出現的count === #
+positive_word_score = []
 for text in list(df.sample_segmented):
     result = 0
     for words in positive_words:
         if words in text:
-            result += 1
-    positive_score.append(result)
-# positive_score
+            result += 1 
+    positive_word_score.append(result)
+# positive_word_score
 
-# --- 計算文本中的負向詞彙 --- #
-negative_score = []
+# === 計算positive pattern 在每一個sample出現的count === #
+positive_pattern = '還好.+(會|不會)?'
+positive_pattern_score = []
+for text in list(df.sample_segmented):
+    positive_pattern_score.append(len(re.findall(positive_pattern,text)))
+# positive_pattern_score
+
+# === 將 positive word和positive pattern計算後的結果合併===#
+positive_score = [positive_word_score[i] + positive_pattern_score[i] for i in range(len(positive_word_score))]
+
+# === 計算positive word 在每一個sample出現的count === #
+positive_word_score = []
 for text in list(df.sample_segmented):
     result = 0
-    for words in negative_words:
+    for words in positive_words:
         if words in text:
-            result -= 1
-    negative_score.append(result)
-# negative_score
+            result += 1 
+    positive_word_score.append(result)
+# positive_word_score
+
+# === 計算positive pattern 在每一個sample出現的count === #
+positive_pattern = '還好.+(會|不會)?'
+positive_pattern_score = []
+for text in list(df.sample_segmented):
+    positive_pattern_score.append(len(re.findall(positive_pattern,text)))
+# positive_pattern_score
+
+# === 將 positive word和positive pattern計算後的結果合併===#
+positive_score = [positive_word_score[i] + positive_pattern_score[i] for i in range(len(positive_word_score))]
+
+# === 加總所有的情緒極度分數 ===#
 # df['positive_score'] = positive_score
 # df['negative_score'] = negative_score
-
-# --- 加總文本中正負向詞彙的數量，判斷文本情緒極度 --- #
 df['polarity_score'] = [positive_score[i] + negative_score[i] for i in range(len(positive_score))]
+
 
 # --- 以數值標記情緒極度 (正向：1 / 中性：0 / 負向：-1) --- #
 df.loc[df.polarity_score > 0, 'sentiment'] = '1' 
